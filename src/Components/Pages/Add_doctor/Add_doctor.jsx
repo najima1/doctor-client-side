@@ -1,0 +1,262 @@
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+
+const Add_doctor = () => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+
+  //image bb
+  const imageBBKey = process.env.REACT_APP_IMG_KEY;
+
+  //react query call api
+  const { data: appintmentSpecility = [] } = useQuery({
+    queryKey: ["appintmentSpecility"],
+    queryFn: async () => {
+      const url = `http://localhost:5000/appintmentSpecility`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.data;
+    },
+  });
+
+  //signup handler
+  const doctorAddHandler = (data) => {
+    const images = data.image[0];
+    const formData = new FormData();
+    formData.append("image", images);
+
+    const url = `https://api.imgbb.com/1/upload?key=${imageBBKey}`;
+    fetch(url, {
+      method: "POST",
+      body: formData,
+    })
+      .then((img) => img.json())
+      .then((imgData) => {
+        if (imgData.success) {
+          const doctor = {
+            name: data.name,
+            email: data.email,
+            catagory: data.catagory,
+            image: imgData.data.url,
+          };
+
+          const accessToken = localStorage.getItem("accessToken");
+          const url = `http://localhost:5000/doctors`;
+          fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", accessToken },
+            body: JSON.stringify(doctor),
+          })
+            .then((e) => e.json())
+            .then((data) => {
+              toast.success("Doctor added successfull");
+            });
+        }
+      });
+  };
+
+  return (
+    <div className="py-4">
+      <h1 className="text-center py-5">add doctor </h1>
+      <div>
+        <form
+          onSubmit={handleSubmit(doctorAddHandler)}
+          className="w-full max-w-xl space-y-6 md:px-16 md:shadow-2xl p-4 py-16"
+        >
+          {/* first name */}
+          <div className="relative ">
+            <span className="absolute top-[8px]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 mx-3 text-gray-300 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </span>
+
+            <input
+              type="text"
+              {...register("name", {
+                required: "Name is required",
+                maxLength: 20,
+                minLength: 6,
+              })}
+              aria-invalid={errors.name ? "true" : "false"}
+              className="block w-full py-2  border rounded-md px-11 bg-gray-100 outline-none pl-10"
+              placeholder="Username"
+            />
+            {errors.name?.type === "required" && (
+              <small className="block text-red-400" role="alert">
+                First name is required
+              </small>
+            )}
+          </div>
+          {/* specility catagory */}
+          <div className="relative ">
+            <select
+              {...register("catagory")}
+              className="block w-full py-2  border rounded-md px-11 bg-gray-100 outline-none pl-2"
+            >
+              {appintmentSpecility.map((e) => (
+                <option key={e._id} value={e.name}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+
+            {errors.catagory && (
+              <small className="text-red-400" role="alert">
+                {errors.catagory.message}
+              </small>
+            )}
+          </div>
+          {/* profile image */}
+          <div className="relative ">
+            <span className="absolute top-[8px] pl-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 text-gray-300 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+            </span>
+
+            <input
+              type="file"
+              accept="image/*"
+              {...register("image", {
+                required: "image is required",
+              })}
+              aria-invalid={errors.image ? "true" : "false"}
+              className="block w-full py-2  border rounded-md px-11 bg-gray-100 outline-none pl-10"
+            />
+            {errors.image && (
+              <small className="text-red-400" role="alert">
+                {errors.image.message}
+              </small>
+            )}
+          </div>
+          {/* email */}
+          <div className="relative ">
+            <span className="absolute top-[8px]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 mx-3 text-gray-300 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </span>
+
+            <input
+              type="text"
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: "Entered value does not match email format",
+                },
+              })}
+              aria-invalid={errors.email ? "true" : "false"}
+              className="block w-full py-2  border rounded-md px-11 bg-gray-100 outline-none pl-10"
+              placeholder="email"
+            />
+            {errors.email && (
+              <small className="text-red-400" role="alert">
+                {errors.email.message}
+              </small>
+            )}
+          </div>
+          {/* password */}{" "}
+          <div className="relative ">
+            <span className="absolute top-[8px]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 mx-3 text-gray-300 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </span>
+
+            <input
+              type="text"
+              {...register("password", {
+                required: "Password is required",
+                minLength: {
+                  value: 6,
+                  message: "minmun length is 6 character",
+                },
+                maxLength: {
+                  value: 10,
+                  message: "maximum length is 10 character",
+                },
+                pattern: {
+                  value: /[\!\@\#\$\%\^\&\*\(\)\_\+\.\,\;\:\-]/,
+                  message:
+                    "Your password must contain at least one special character.",
+                },
+              })}
+              aria-invalid={errors.password ? "true" : "false"}
+              className="block w-full py-2  border rounded-md px-11 bg-gray-100 outline-none pl-10"
+              placeholder="password"
+            />
+
+            {errors.password && (
+              <small className="text-red-400" role="alert">
+                {errors.password.message}
+              </small>
+            )}
+          </div>
+          {/* submit button */}
+          <div className="mt-6">
+            <button
+              type="submit"
+              className="w-full px-6 py-2 text-sm font-medium trackingWide textWhite capitalize transition-colors duration-300 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50"
+            >
+              Add doctor
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Add_doctor;

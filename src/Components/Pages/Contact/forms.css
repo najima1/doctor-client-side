@@ -1,0 +1,6 @@
+.form_bg {
+  background-image: url("../../image/bg_blur.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
